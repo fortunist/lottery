@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>복권 번호 생성기</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --border: #d2d2d7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1d1d1f;
+      --card: #2c2c2e;
+      --text: #f5f5f7;
+      --muted: #98989d;
+      --accent: #0a84ff;
+      --accent-hover: #409cff;
+      --border: #3a3a3c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans KR", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+  h1 {
+    margin: 0 0 20px;
+    font-size: 20px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .result {
+    min-height: 88px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px 12px;
+    margin-bottom: 20px;
+    background: var(--bg);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .result-label {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .result-value {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    word-break: keep-all;
+  }
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  button {
+    appearance: none;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 17px;
+    font-weight: 500;
+    padding: 14px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.05s ease;
+    font-family: inherit;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:active { transform: scale(0.98); }
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>복권 번호 생성기</h1>
+    <div class="result" aria-live="polite">
+      <div class="result-label" id="resultLabel">버튼을 누르세요</div>
+      <div class="result-value" id="resultValue"></div>
+    </div>
+    <div class="buttons">
+      <button type="button" id="lottoBtn">로또</button>
+      <button type="button" id="pensionBtn">연금복권</button>
+    </div>
+  </div>
+</main>
+<script>
+  const randInt = (min, max) => {
+    const range = max - min + 1;
+    const buf = new Uint32Array(1);
+    const limit = Math.floor(0xffffffff / range) * range;
+    let v;
+    do { crypto.getRandomValues(buf); v = buf[0]; } while (v >= limit);
+    return min + (v % range);
+  };
+
+  const lotto = () => {
+    const pool = Array.from({ length: 45 }, (_, i) => i + 1);
+    for (let i = 0; i < 6; i++) {
+      const j = i + randInt(0, pool.length - 1 - i);
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 6).sort((a, b) => a - b)
+      .map(n => String(n).padStart(2, " ")).join("  ");
+  };
+
+  const pension = () => {
+    const group = randInt(1, 5);
+    let digits = "";
+    for (let i = 0; i < 6; i++) digits += randInt(0, 9);
+    return `${group}조  ${digits}`;
+  };
+
+  const label = document.getElementById("resultLabel");
+  const value = document.getElementById("resultValue");
+  const show = (kind, text) => {
+    label.textContent = kind;
+    value.textContent = text;
+  };
+
+  document.getElementById("lottoBtn").addEventListener("click", () => show("로또", lotto()));
+  document.getElementById("pensionBtn").addEventListener("click", () => show("연금복권", pension()));
+</script>
+</body>
+</html>

@@ -1,63 +1,33 @@
-name: Build
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            artifact: lottery-macos
-          - os: windows-latest
-            artifact: lottery-windows
-    runs-on: ${{ matrix.os }}
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v6
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v4
         with:
-          python-version: '3.14'
+          path: .
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
-
-      - name: Build executable
-        run: pyinstaller --onefile --windowed --name lottery lottery.py
-
-      - name: Package (macOS)
-        if: runner.os == 'macOS'
-        run: ditto -c -k --sequesterRsrc --keepParent dist/lottery.app ${{ matrix.artifact }}.zip
-
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
-        run: Compress-Archive -Path dist/lottery.exe -DestinationPath ${{ matrix.artifact }}.zip
-        shell: pwsh
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.zip
-
-  release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - uses: softprops/action-gh-release@v3
-        with:
-          files: artifacts/*.zip
+      - id: deployment
+        uses: actions/deploy-pages@v4
