@@ -32,10 +32,19 @@ jobs:
       - name: Build executable
         run: pyinstaller --onefile --windowed --name lottery lottery.py
 
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent dist/lottery.app ${{ matrix.artifact }}.zip
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path dist/lottery.exe -DestinationPath ${{ matrix.artifact }}.zip
+        shell: pwsh
+
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
-          path: dist/*
+          path: ${{ matrix.artifact }}.zip
 
   release:
     needs: build
@@ -47,13 +56,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
-
-      - name: Zip artifacts
-        run: |
-          cd artifacts
-          for dir in */; do
-            zip -r "${dir%/}.zip" "$dir"
-          done
+          merge-multiple: true
 
       - uses: softprops/action-gh-release@v3
         with:
